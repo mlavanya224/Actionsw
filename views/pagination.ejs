@@ -1,0 +1,118 @@
+<script src="https://ajax.googleapis.com/ajax/libs/jquery/2.1.1/jquery.min.js"></script>
+<script src="https://pagination.js.org/dist/2.1.4/pagination.min.js"></script>
+<style>
+  #myTable td, #myTable th {
+  border: 1px solid #ddd;
+  padding: 8px;
+}
+
+#myTable tr:nth-child(even){background-color: #f2f2f2;}
+
+#myTable tr:hover {background-color: #ddd;}
+
+#myTable th {
+  padding-top: 12px;
+  padding-bottom: 12px;
+  text-align: left;
+  background-color: #4CAF50;
+  color: white;
+}
+
+table {
+  border-collapse: collapse;
+  width: 73%;
+}
+#pagination {
+  width: 100%;
+  /* text-align: center; */
+  margin: 2% 0% 0% 25%;
+}
+
+#pagination ul li {
+  display: inline;
+  margin-left: 10px;
+}
+
+</style>
+<div style="margin: 10% 0% 0% 25%;">
+    <label>Sort order:</label>
+<select id="selectionOrder">
+  <option value="itemAsc">Recent Projects</option>
+  <option value="categorynameAsc">Order By Category Name ASC</option>
+  <option value="categorynameDesc">Order By Category Name Desc</option>
+  <option value="usernameAsc">Order By Username Asc</option>
+  <option value="usernameDesc">Order By Username Desc</option>
+  <option value="projecttitleAsc">Order By Project Title Asc</option>
+  <option value="projecttitleDesc">Order By Project Title Desc</option>
+</select>
+<table id="myTable">
+  <thead>
+    <tr>
+      <th>projecttitle</th>
+      <th>username</th>
+      <th>categoryname</th>
+    </tr>
+  </thead>
+  <tbody id="data-container">
+    <% records.forEach(function(mascot) { %>
+    <tr>
+      <td><%= mascot.project_title %></td>
+      <td><%= mascot.username %></td>
+      <td><%= mascot.categories_name %></td>
+    </tr>
+     <% }); %>
+  </tbody>
+</table>
+</div>
+<div id="pagination"></div>
+<script>
+    let rows = []
+$('table tbody tr').each(function(i, row) {
+  return rows.push(row);
+});
+
+$('#pagination').pagination({
+    dataSource: rows,
+    pageSize: 2,
+    callback: function(data, pagination) {
+        $('tbody').html(data);
+    }
+})
+
+const myTableTbody = document.querySelector('#myTable tbody');
+const myTableThead = document.querySelector('#myTable thead');
+
+const jsonFromHtml = (tbody, thead) => {
+  let tableJson = {rows:[]};
+  [...tbody.children].forEach(tableRow => {
+    let rowEntry = {};
+    [...tableRow.children].forEach((cell, column) => rowEntry[thead.children[0].children[column].textContent] = cell.textContent);
+    tableJson.rows.push(rowEntry);
+  });
+  return tableJson;
+};
+
+const customSort = (arr, key, order) => {
+  let sortCompare = order == 'Desc' ? -1 : 1;
+  return arr.sort((first, second) => first[key]>second[key] ?  sortCompare : first[key]<second[key] ?  -sortCompare : 0);
+};
+
+const arrayToTable = (arr, tbody, thead) => {
+  let rows = [];
+  arr.forEach((row, rowNum) => {
+    row = [...thead.children[0].children].map(th => row[th.textContent] ? row[th.textContent] : '');
+    row = row.map(td => `<td>${td}</td>`);
+    row = `<tr>${row.join('')}</tr>`;
+    rows.push(row);
+  });
+  tbody.innerHTML = rows.join('');
+};
+
+document.querySelector('#selectionOrder').addEventListener('change', function(){
+  let sortKey = this.value.match(/[a-z]+/)[0];
+  let sortOrder = this.value.match(/(A|De)sc/) ? this.value.match(/(A|De)sc/)[0] : 'Asc';
+  let myTableJson = jsonFromHtml(myTableTbody, myTableThead);
+  myTableJson.rows = customSort(myTableJson.rows, sortKey, sortOrder);
+  arrayToTable(myTableJson.rows, myTableTbody, myTableThead);
+});
+</script>
